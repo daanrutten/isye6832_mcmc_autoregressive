@@ -1,5 +1,5 @@
 figure;
-histogram(roots_log(:));
+histogram(abs(roots_log(:)));
 title("roots");
 
 figure;
