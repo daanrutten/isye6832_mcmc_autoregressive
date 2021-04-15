@@ -14,7 +14,7 @@ sigma_eps_log = zeros(T, 1);
 p_log = zeros(T, 1);
 
 % Compute the residuals
-eps = compute_eps(y, roots, p);                 % the current residuals (at time t)
+eps = compute_eps(y, roots, p, pmax);           % the current residuals (at time t)
 prior_eps = prod(normpdf(eps(pmax+1:end), 0, sigma_eps));
 
 for t = 1:T
@@ -47,7 +47,7 @@ for t = 1:T
         end
         
         % Compute the residuals for the new roots
-        eps_star = compute_eps(y, roots_star, p);
+        eps_star = compute_eps(y, roots_star, p, pmax);
         prior_eps_star = prod(normpdf(eps_star(pmax+1:end), 0, sigma_eps));
         
         % Compute the acceptance ratio
@@ -118,7 +118,7 @@ for t = 1:T
         end
         
         % Compute the residuals for the new roots
-        eps_star = compute_eps(y, roots_star, p+2);
+        eps_star = compute_eps(y, roots_star, p+2, pmax);
         prior_eps_star = prod(normpdf(eps_star(pmax+1:end), 0, sigma_eps));
         
         % Compute the probabilities used in computing the acceptance ratio
@@ -148,7 +148,7 @@ for t = 1:T
         roots_z_star = roots_z(swap);
         
         % Compute the residuals for the new roots
-        eps_star = compute_eps(y, roots_star, p-2);
+        eps_star = compute_eps(y, roots_star, p-2, pmax);
         prior_eps_star = prod(normpdf(eps_star(pmax+1:end), 0, sigma_eps));
         
         % Compute the q for the new p
