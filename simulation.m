@@ -1,12 +1,12 @@
 % Hyperparameters of the MCMC algorithm
-T = 10^5;                   % the total number of time steps
+T = 10^8;                   % the total number of time steps
 
 prob_birth = 0.025;         % probability to do a birth step
-sigma_sigma_eps = 0.05;     % the std of the std of the residuals
+sigma_sigma_eps = 0.01;     % the std of the std of the residuals
 
 prob_real = 0.5;            % probability that a root is real
-sigmaz = 1;                 % the std of z (in the generation of roots)
-pmax = 4;                   % the maximum model order
+sigmaz = 10;                % the std of z (in the generation of roots)
+pmax = 2;                   % the maximum model order
 
 name = "test";
 

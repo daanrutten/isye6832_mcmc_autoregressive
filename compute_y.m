@@ -9,3 +9,5 @@ for t = p+1:size(eps, 1)
         y(t) = y(t) - sum(prod(-bin, 2), 1) * y(t-k);
     end
 end
+
+y = real(y);
