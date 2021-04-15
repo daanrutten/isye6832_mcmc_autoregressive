@@ -9,9 +9,9 @@ sigma_eps = abs(normrnd(0, sigma_sigma_eps));   % the current std of the residua
 p = 2 * randsample(0.5 * pmax, 1);              % the current model order (at time t)
 
 % Track values of parameters over time
-roots_log = zeros(T, pmax);
-sigma_eps_log = zeros(T, 1);
-p_log = zeros(T, 1);
+roots_log = zeros(Tbatch, pmax);
+sigma_eps_log = zeros(Tbatch, 1);
+p_log = zeros(Tbatch, 1);
 
 % Compute the residuals
 eps = compute_eps(y, roots, p, pmax);           % the current residuals (at time t)
@@ -189,12 +189,13 @@ for t = 1:T
         end
     end
     
-    roots_log(t, :) = roots;
-    sigma_eps_log(t) = sigma_eps;
-    p_log(t) = p;
+    step = mod(t - 1, Tbatch) + 1;
+    roots_log(step, :) = roots;
+    sigma_eps_log(step) = sigma_eps;
+    p_log(step) = p;
     
     if mod(t, Tbatch) == 0
-        save(name, "y", "T", "prob_birth", "sigma_sigma_eps", "prob_real", "sigmaz", "pmax", "roots_log", "sigma_eps_log", "p_log");
+        save(name + "_" + (t / Tbatch), "y", "T", "prob_birth", "sigma_sigma_eps", "prob_real", "sigmaz", "pmax", "roots_log", "sigma_eps_log", "p_log");
         disp("Finished running " + t + " timesteps");
     end
 end
