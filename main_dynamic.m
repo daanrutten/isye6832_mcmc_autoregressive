@@ -15,7 +15,7 @@ p_log = zeros(T, 1);
 
 % Compute the residuals
 eps = compute_eps(y, roots, p, pmax);           % the current residuals (at time t)
-prior_eps = prod(normpdf(eps(pmax+1:end), 0, sigma_eps));
+prior_eps = -sum(eps(pmax+1:end).^2) / (2 * sigma_eps^2);
 
 for t = 1:T
     probm = compute_probm(prob_birth, p, pmax);
@@ -48,10 +48,10 @@ for t = 1:T
         
         % Compute the residuals for the new roots
         eps_star = compute_eps(y, roots_star, p, pmax);
-        prior_eps_star = prod(normpdf(eps_star(pmax+1:end), 0, sigma_eps));
+        prior_eps_star = -sum(eps_star(pmax+1:end).^2) / (2 * sigma_eps^2);
         
         % Compute the acceptance ratio
-        accratio = prior_eps_star / prior_eps;
+        accratio = exp(prior_eps_star - prior_eps);
         
         if rand() < accratio
             % Move to the new state
@@ -63,13 +63,13 @@ for t = 1:T
         
         % Sample random sigma according to half-normal distribution
         sigma_eps_star = abs(normrnd(0, sigma_sigma_eps));
-        prior_eps_star = prod(normpdf(eps(pmax+1:end), 0, sigma_eps_star));
+        prior_eps_star = -sum(eps(pmax+1:end).^2) / (2 * sigma_eps_star^2);
         
         % Compute the acceptance ratio
         pi_mstar_to_m = normpdf(sigma_eps, 0, sigma_sigma_eps);
         pi_m_to_mstar = normpdf(sigma_eps_star, 0, sigma_sigma_eps);
-        pi_y_mstar = prior_eps_star * sigma_eps_star^(-2);
-        pi_y_m = prior_eps * sigma_eps^(-2);
+        pi_y_mstar = (sigma_eps / sigma_eps_star)^(size(y, 1) - pmax) * exp(prior_eps_star - prior_eps) * sigma_eps_star^(-2);
+        pi_y_m = sigma_eps^(-2);
         
         accratio = pi_y_mstar * pi_mstar_to_m / (pi_y_m * pi_m_to_mstar);
         
@@ -119,15 +119,14 @@ for t = 1:T
         
         % Compute the residuals for the new roots
         eps_star = compute_eps(y, roots_star, p+2, pmax);
-        prior_eps_star = prod(normpdf(eps_star(pmax+1:end), 0, sigma_eps));
+        prior_eps_star = -sum(eps_star(pmax+1:end).^2) / (2 * sigma_eps^2);
         
         % Compute the probabilities used in computing the acceptance ratio
         pi_mstar_to_m = 1 / (0.5 * p + 1);
         pi_m_to_mstar = q_roots_star;
-        pi_y_mstar = prior_eps_star * prior_roots_star;
-        pi_y_m = prior_eps;
+        pi_y_mstar = exp(prior_eps_star - prior_eps) * prior_roots_star;
         
-        accratio = pi_y_mstar * pi_mstar_to_m / (pi_y_m * pi_m_to_mstar);
+        accratio = pi_y_mstar * pi_mstar_to_m / pi_m_to_mstar;
         
         if rand() < accratio
             % Move to the new state
@@ -149,7 +148,7 @@ for t = 1:T
         
         % Compute the residuals for the new roots
         eps_star = compute_eps(y, roots_star, p-2, pmax);
-        prior_eps_star = prod(normpdf(eps_star(pmax+1:end), 0, sigma_eps));
+        prior_eps_star = -sum(eps_star(pmax+1:end).^2) / (2 * sigma_eps^2);
         
         % Compute the q for the new p
         if imag(roots(2*k-1)) == 0
@@ -175,8 +174,8 @@ for t = 1:T
         % Compute the probabilities used in computing the acceptance ratio
         pi_mstar_to_m = q_roots;
         pi_m_to_mstar = 1 / (0.5 * p);
-        pi_y_mstar = prior_eps_star;
-        pi_y_m = prior_eps * prior_roots;
+        pi_y_mstar = exp(prior_eps_star - prior_eps);
+        pi_y_m = prior_roots;
         
         accratio = pi_y_mstar * pi_mstar_to_m / (pi_y_m * pi_m_to_mstar);
         
