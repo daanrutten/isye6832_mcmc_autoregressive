@@ -12,4 +12,4 @@ sigmaz = 1;                 % the std of z (in the generation of roots)
 pmax = 4;                   % the maximum model order
 
 % Run the MCMC algorithm
-[roots_log, p_log, sigma_eps_log] = main(y, T, prob_birth, sigma_sigma_eps, prob_real, sigmaz, pmax);
+[roots_log, p_log, sigma_eps_log] = main(y, T, prob_birth, sigma_sigma_eps, prob_real, sigmaz, pmax, "test");

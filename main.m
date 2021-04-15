@@ -1,13 +1,12 @@
-function [roots_log, p_log, sigma_eps_log] = main(y, T, prob_birth, sigma_sigma_eps, prob_real, sigmaz, pmax)
+function [roots_log, p_log, sigma_eps_log] = main(y, T, prob_birth, sigma_sigma_eps, prob_real, sigmaz, pmax, name)
+
+Tbatch = min(T, 10^7);
 
 % Set initial values of parameters
 roots = zeros(pmax, 1);                         % the current inverse roots (at time t)
+roots_z = zeros(pmax, 1);                       % the z of the current roots (at time t)
 sigma_eps = abs(normrnd(0, sigma_sigma_eps));   % the current std of the residuals (at time t)
 p = 2 * randsample(0.5 * pmax, 1);              % the current model order (at time t)
-
-roots_z = zeros(pmax, 1);                       % the z of the current roots (at time t)
-prior_roots = normpdf(roots_z, 0, sigmaz);      % prior of the current roots (at time t)
-q_roots = prior_roots;                          % q of the current roots (at time t)
 
 % Track values of parameters over time
 roots_log = zeros(T, pmax);
@@ -34,12 +33,6 @@ for t = 1:T
             roots_star(2*k-1:2*k) = 2 * exp(z1z2) ./ (1 + exp(z1z2)) - 1;
             roots_z_star = roots_z;
             roots_z_star(2*k-1:2*k) = z1z2;
-            prior_roots_star = prior_roots;
-            prior_roots_star(2*k-1:2*k) = normpdf(z1z2, 0, sigmaz);
-            prior_roots_star(2*k-1) = prob_real * prior_roots_star(2*k-1);
-            q_roots_star = q_roots;
-            q_roots_star(2*k-1:2*k) = normpdf(z1z2, 0, sigmaz);
-            q_roots_star(2*k-1) = prob_real * q_roots_star(2*k-1);
         else
             % Sample random z1 according to normal distribution and u1 uniform
             z1 = abs(normrnd(0, sigmaz));
@@ -50,31 +43,21 @@ for t = 1:T
             roots_star(2*k-1:2*k) = (2 * exp(z1) ./ (1 + exp(z1)) - 1) * exp(1i * [u1; -u1]);
             roots_z_star = roots_z;
             roots_z_star(2*k-1:2*k) = [z1; u1];
-            prior_roots_star = prior_roots;
-            prior_roots_star(2*k-1) = 2 * (1 - prob_real) * normpdf(z1, 0, sigmaz);
-            prior_roots_star(2*k) = 1;
-            q_roots_star = q_roots;
-            q_roots_star(2*k-1) = 2 * (1 - prob_real) * normpdf(z1, 0, sigmaz);
-            q_roots_star(2*k) = 1;
         end
         
         % Compute the residuals for the new roots
         eps_star = compute_eps(y, roots_star, p);
         
         % Compute the acceptance ratio
-        pi_mstar_to_m = prod(q_roots(2*k-1:2*k));
-        pi_m_to_mstar = prod(q_roots_star(2*k-1:2*k));        
-        pi_y_mstar = prod(normpdf(eps_star(pmax+1:end), 0, sigma_eps)) * prod(prior_roots_star(2*k-1:2*k));
-        pi_y_m = prod(normpdf(eps(pmax+1:end), 0, sigma_eps)) * prod(prior_roots(2*k-1:2*k));
+        pi_y_mstar = prod(normpdf(eps_star(pmax+1:end), 0, sigma_eps));
+        pi_y_m = prod(normpdf(eps(pmax+1:end), 0, sigma_eps));
         
-        accratio = pi_y_mstar * pi_mstar_to_m / (pi_y_m * pi_m_to_mstar);
+        accratio = pi_y_mstar / pi_y_m;
         
         if rand() < accratio
             % Move to the new state
             roots = roots_star;
             roots_z = roots_z_star;
-            prior_roots = prior_roots_star;
-            q_roots = q_roots_star;
             eps = eps_star;
         end
         
@@ -112,14 +95,9 @@ for t = 1:T
             roots_star(p+1:p+2) = 2 * exp(z1z2) ./ (1 + exp(z1z2)) - 1;
             roots_z_star = roots_z;
             roots_z_star(p+1:p+2) = z1z2;
-            prior_roots_star = prior_roots;
-            prior_roots_star(p+1:p+2) = normpdf(z1z2, 0, sigmaz);
-            prior_roots_star(p+1) = prob_real * prior_roots_star(p+1);
-            q_roots_star = q_roots;
-            q_roots_star(p+1:p+2) = normpdf(z1z2, 0, sigmaz);
-            q_roots_star(p+1) = prob_real * q_roots_star(p+1);
             
-            b_roots_star = prob_real * prod(normpdf(z1z2, mur, sigmar));
+            prior_roots_star = prod(normpdf(z1z2, 0, sigmaz));
+            q_roots_star = prod(normpdf(z1z2, mur, sigmar));
         else
             % Hyperparameters
         	%sigmar = 2 * sigma_eps^2 * sigmaz^2 / (2 * sigma_eps^2 + sigmaz^2 * (2 * sum(eps(pmax:end-1).^2) + sum(eps(pmax-1:end-2) .* eps(pmax+1:end))));
@@ -129,22 +107,18 @@ for t = 1:T
             sigmar = sigmaz;
             mur = 0;
             
-            % Sample random z1 according to normal distribution and u1
-            % uniform
+            % Sample random z1 according to normal distribution and u1 uniform
             z1 = abs(normrnd(mur, sigmar));
             u1 = 2 * pi * rand();
             
             % Compute the new roots
             roots_star = roots;
             roots_star(p+1:p+2) = (2 * exp(z1) ./ (1 + exp(z1)) - 1) * exp(1i * [u1; -u1]);
-            prior_roots_star = prior_roots;
-            prior_roots_star(p+1) = 2 * (1 - prob_real) * normpdf(z1, 0, sigmaz);
-            prior_roots_star(p+2) = 1;
-            q_roots_star = q_roots;
-            q_roots_star(p+1) = 2 * (1 - prob_real) * normpdf(z1, 0, sigmaz);
-            q_roots_star(p+2) = 1;
+            roots_z_star = roots_z;
+            roots_z_star(p+1:p+2) = [z1; u1];
             
-            b_roots_star = 2 * (1 - prob_real) * normpdf(z1, mur, sigmar);
+            prior_roots_star = normpdf(z1, 0, sigmaz);
+            q_roots_star = normpdf(z1, mur, sigmar);
         end
         
         % Compute the residuals for the new roots
@@ -152,8 +126,8 @@ for t = 1:T
         
         % Compute the probabilities used in computing the acceptance ratio
         pi_mstar_to_m = 1 / (0.5 * p + 1);
-        pi_m_to_mstar = b_roots_star;
-        pi_y_mstar = prod(normpdf(eps_star(pmax+1:end), 0, sigma_eps)) * prod(prior_roots_star(p+1:p+2));
+        pi_m_to_mstar = q_roots_star;
+        pi_y_mstar = prod(normpdf(eps_star(pmax+1:end), 0, sigma_eps)) * prior_roots_star;
         pi_y_m = prod(normpdf(eps(pmax+1:end), 0, sigma_eps));
         
         accratio = pi_y_mstar * pi_mstar_to_m / (pi_y_m * pi_m_to_mstar);
@@ -162,8 +136,6 @@ for t = 1:T
             % Move to the new state
             roots = roots_star;
             roots_z = roots_z_star;
-            prior_roots = prior_roots_star;
-            q_roots = q_roots_star;
             eps = eps_star;
             p = p + 2;
         end
@@ -176,8 +148,6 @@ for t = 1:T
         
         roots_star = roots(swap);
         roots_z_star = roots_z(swap);
-        prior_roots_star = prior_roots_star(swap);
-        q_roots_star = q_roots(swap);
         
         % Compute the residuals for the new roots
         eps_star = compute_eps(y, roots_star, p-2);
@@ -193,7 +163,8 @@ for t = 1:T
             mur = 0;
             
             % Compute the new roots
-            b_roots_star = prob_real * prod(normpdf(roots_z(2*k-1:2*k), mur, sigmar));
+            prior_roots = prod(normpdf(roots_z(2*k-1:2*k), 0, sigmaz));
+            q_roots = prod(normpdf(roots_z(2*k-1:2*k), mur, sigmar));
         else
             % Hyperparameters
         	%sigmar = 2 * sigma_eps^2 * sigmaz^2 / (2 * sigma_eps^2 + sigmaz^2 * (2 * sum(eps_star(pmax:end-1).^2) + sum(eps_star(pmax-1:end-2) .* eps_star(pmax+1:end))));
@@ -202,16 +173,17 @@ for t = 1:T
             
             sigmar = sigmaz;
             mur = 0;
-
+            
             % Compute the new roots
-            b_roots_star = 2 * (1 - prob_real) * normpdf(roots_z(2*k-1), mur, sigmar);
+            prior_roots = normpdf(roots_z(2*k-1), 0, sigmaz);
+            q_roots = normpdf(roots_z(2*k-1), mur, sigmar);
         end
         
         % Compute the probabilities used in computing the acceptance ratio
-        pi_mstar_to_m = b_roots_star;
+        pi_mstar_to_m = q_roots;
         pi_m_to_mstar = 1 / (0.5 * p);
         pi_y_mstar = prod(normpdf(eps_star(pmax+1:end), 0, sigma_eps));
-        pi_y_m = prod(normpdf(eps(pmax+1:end), 0, sigma_eps)) * prod(prior_roots(2*k-1:2*k));
+        pi_y_m = prod(normpdf(eps(pmax+1:end), 0, sigma_eps)) * prior_roots;
         
         accratio = pi_y_mstar * pi_mstar_to_m / (pi_y_m * pi_m_to_mstar);
         
@@ -219,8 +191,6 @@ for t = 1:T
             % Move to the new state
             roots = roots_star;
             roots_z = roots_z_star;
-            prior_roots = prior_roots_star;
-            q_roots = q_roots_star;
             eps = eps_star;
             p = p - 2;
         end
@@ -229,4 +199,8 @@ for t = 1:T
     roots_log(t, :) = roots;
     sigma_eps_log(t) = sigma_eps;
     p_log(t) = p;
+    
+    if mod(t, Tbatch) == 0
+        save(name, "y", "T", "prob_birth", "sigma_sigma_eps", "prob_real", "sigmaz", "pmax", "roots_log", "sigma_eps_log", "p_log");
+    end
 end
