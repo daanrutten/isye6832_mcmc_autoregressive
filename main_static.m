@@ -1,4 +1,4 @@
-function [roots_log, p_log, sigma_eps_log] = main(y, T, prob_birth, sigma_sigma_eps, prob_real, sigmaz, pmax, name)
+function [roots_log, p_log, sigma_eps_log] = main_static(y, T, prob_birth, sigma_sigma_eps, prob_real, sigmaz, pmax, name)
 
 Tbatch = min(T, 10^7);
 
@@ -208,5 +208,6 @@ for t = 1:T
     
     if mod(t, Tbatch) == 0
         save(name, "y", "T", "prob_birth", "sigma_sigma_eps", "prob_real", "sigmaz", "pmax", "roots_log", "sigma_eps_log", "p_log");
+        disp("Finished running " + t + " timesteps");
     end
 end
