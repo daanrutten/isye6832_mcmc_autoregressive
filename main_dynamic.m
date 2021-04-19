@@ -223,6 +223,8 @@ for t = 1:T
                 roots_z_star = roots_z;
             end
             
+            roots_star(p) = 0;
+            roots_z_star(p) = 0;
             p_star = p-1;
         else
             k2 = ceil(0.5 * k);
@@ -232,6 +234,8 @@ for t = 1:T
             
             roots_star = roots(swap);
             roots_z_star = roots_z(swap);
+            roots_star(pmax-1:pmax) = 0;
+            roots_z_star(pmax-1:pmax) = 0;
             p_star = p-2;
         end
         
