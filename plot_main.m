@@ -14,7 +14,7 @@ for name = names
     
     root_edges = (-1:0.01:1)';
     sigma_edges = (0:0.005*sigma_sigma_eps:2*sigma_sigma_eps)';
-    p_edges = (2:2:pmax+2)';
+    p_edges = (1:pmax+1)';
     
     roots_log_real_total = zeros(1, size(root_edges, 1) - 1);
     roots_log_complexre_total = zeros(1, size(root_edges, 1) - 1);
